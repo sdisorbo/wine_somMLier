@@ -2,18 +2,27 @@ import pandas as pd
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import root_mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import root_mean_squared_error, r2_score, accuracy_score
 
-# load validation data?
-print('loading...')
+# helper function for measuring accuracy within threshold
+def accuracy(y_true, y_pred, threshold):
+    correct = 0
+    total = len(y_true)
+    for true, pred in zip(y_true, y_pred):
+        if abs(true - pred) <= threshold:
+            correct += 1
+    return correct / total
+
+# load validation data
 data = pd.read_csv("cleaned_wine_validation_data.csv")
 
 # if data is has price column as empty, exclude from data
 data = data[data['price'].notnull()]
 
+print("\n---------Linear Regression with Just Description---------")
+
 # tfidf
-print('vectorizing...')
 tfidf_vectorizer = TfidfVectorizer(max_features=1000)
 X = tfidf_vectorizer.fit_transform(data['description'])
 y = data['price']
@@ -38,16 +47,6 @@ print("Train RMSE:", train_rmse)
 print("Test RMSE:", test_rmse)
 print("Train R2 Score:", train_r2)
 print("Test R2 Score:", test_r2)
-
-
-# accuracy within threshold
-def accuracy(y_true, y_pred, threshold):
-    correct = 0
-    total = len(y_true)
-    for true, pred in zip(y_true, y_pred):
-        if abs(true - pred) <= threshold:
-            correct += 1
-    return correct / total
 
 # calculate accuracy within $10
 acc = accuracy(y_test, test_preds, threshold=10)
@@ -74,15 +73,23 @@ predicted_prices = model.predict(new_X)
 print("Predicted Prices:", predicted_prices)
 
 
-print("\nWITH REGION AND VINTAGE\n")
-# WITH REGION ANDE VINTAGE
+
+
+
+# reuse for linear and logistic regression
 data['year'] = data['title'].str.extract(r'(\b\d{4}\b)')
 years = data['year'][~data['year'].isna()]
 avg_year = round(years.astype(float).mean())
+data['year'] = data['year'].fillna(f'{avg_year}')
 
 data['all'] = data['description'] + ' ' + \
                 data['province'].fillna('') + ' ' + \
-                data['year'].fillna(f'{avg_year}')
+                data['year']
+
+
+print("\n---------Linear Regression with Region and Vintage---------")
+
+
 print(data['all'][0])
 
 tfidf_vectorizer = TfidfVectorizer(max_features=1000)
@@ -108,14 +115,6 @@ print("Test RMSE:", test_rmse)
 print("Train R2 Score:", train_r2)
 print("Test R2 Score:", test_r2)
 
-def accuracy(y_true, y_pred, threshold):
-    correct = 0
-    total = len(y_true)
-    for true, pred in zip(y_true, y_pred):
-        if abs(true - pred) <= threshold:
-            correct += 1
-    return correct / total
-
 acc = accuracy(y_test, test_preds, threshold=10)
 print("Accuracy within $10:", acc)
 
@@ -125,4 +124,39 @@ print("Accuracy within 20%:", acc)
 
 
 
+# LOGISTIC REGRESSION WITH REGION AND VINTAGE
+# Much better accuracy but loses some precision
+print("\n----------Logistic Regression with Region and Vintage----------")
+
+bins = [0, 5, 20, 50, 100, 300, float('inf')]
+labels = ['free', 'very cheap', 'moderate', 'expensive', 'very expensive', 'very fancy']
+
+data['price_category'] = pd.cut(data['price'], bins=bins, labels=labels, right=False)
+
+data['description'] = data['description'] + ' ' + \
+                      data['province'].fillna('') + ' ' + \
+                      data['region_1'].fillna('') + ' ' + \
+                      data['region_2'].fillna('') + ' ' + \
+                      data['year']
+
+tfidf_vectorizer = TfidfVectorizer(max_features=1000)
+X = tfidf_vectorizer.fit_transform(data['description'])
+y = data['price_category']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+train_preds = model.predict(X_train)
+test_preds = model.predict(X_test)
+
+print(train_preds)
+
+train_accuracy = accuracy_score(y_train, train_preds)
+test_accuracy = accuracy_score(y_test, test_preds)
+
+print("Train Accuracy:", train_accuracy)
+print("Test Accuracy:", test_accuracy)
 
