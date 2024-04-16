@@ -90,7 +90,7 @@ data['all'] = data['description'] + ' ' + \
 print("\n---------Linear Regression with Region and Vintage---------")
 
 
-print(data['all'][0])
+# print(data['all'][0])
 
 tfidf_vectorizer = TfidfVectorizer(max_features=1000)
 X = tfidf_vectorizer.fit_transform(data['all'])
@@ -152,7 +152,6 @@ model.fit(X_train, y_train)
 train_preds = model.predict(X_train)
 test_preds = model.predict(X_test)
 
-print(train_preds)
 
 train_accuracy = accuracy_score(y_train, train_preds)
 test_accuracy = accuracy_score(y_test, test_preds)
