@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Price Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif; /* Improves readability */
+            color: #4B0082; /* Text color set to a shade of purple */
+            background-color: #FAF0E6; /* Light background to complement the purple */
+            text-align: center; /* Centers text */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #DAA520; /* Gold color for headings */
+        }
+        form {
+            background-color: #FFFFFF; /* White background for the form */
+            padding: 20px;
+            border-radius: 8px; /* Slightly rounded corners for the form */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            margin-top: 20px;
+        }
+        textarea, input[type="text"], input[type="submit"] {
+            margin-top: 10px; /* Adds space between form elements */
+            width: 100%; /* Full-width inputs for consistency */
+            padding: 10px;
+            border-radius: 4px; /* Slightly rounded corners for inputs */
+            border: 1px solid #DDD; /* Light border for inputs */
+        }
+        input[type="submit"] {
+            background-color: #4B0082; /* Purple background for the submit button */
+            color: #FFFFFF; /* White text for the submit button */
+            cursor: pointer; /* Changes cursor to indicate it's clickable */
+        }
+        input[type="submit"]:hover {
+            background-color: #DAA520; /* Changes background to gold on hover */
+        }
+        footer {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <img src="static/MLier.jpg" style="width: 100px; height: auto; border-radius: 50%;"> <!-- Adjust the path as necessary -->
+        <h1>Team 144 | Master SomMLier</h1>
+    </div>
+    <form action="/" method="post">
+        <label for="description">Please Type a Description of your Wine (The more descriptive the better!):</label><br>
+        <textarea id="description" name="description" rows="4" cols="50"></textarea><br>
+        <label for="year">Year:</label><br>
+        <input type="text" id="year" name="year"><br>
+        <label for="location">Location:</label><br>
+        <input type="text" id="location" name="location"><br>
+        <label for="actual_price">Actual Price ($):</label><br>
+        <input type="number" id="actual_price" name="actual_price"><br>
+        <input type="submit" value="Get Estimated Price">
+    </form>
+    <footer>
+        <p>Group Members: Alfonso Moceri, Jeongin Bae, Jess Azucena, Sam DiSorbo, Zach Betron</p>
+    </footer>
+</body>
+</html>

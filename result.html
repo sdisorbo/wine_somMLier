@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wine Price Prediction Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #4B0082; /* Maintaining the purple text color */
+            background-color: #FAF0E6;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #DAA520; /* Gold color for the heading */
+        }
+        p {
+            font-size: 24px; /* Larger text for readability */
+            margin: 20px 0; /* Adds space around the paragraph */
+        }
+        strong {
+            font-size: 32px; /* Even larger font size for price emphasis */
+            color: #DAA520; /* Gold color for the price */
+        }
+        a {
+            background-color: #4B0082; /* Purple background for consistency */
+            color: #FFFFFF; /* White text for contrast */
+            padding: 10px 20px; /* Padding for a larger clickable area */
+            border-radius: 4px; /* Rounded corners for aesthetics */
+            text-decoration: none; /* Removes underline from the link */
+            display: inline-block; /* Allows padding and margin to affect the link */
+            margin-top: 20px; /* Space above the link */
+        }
+        a:hover {
+            background-color: #DAA520; /* Changes background to gold on hover */
+            color: #4B0082; /* Purple text for a complete swap */
+        }
+    </style>
+</head>
+<body>
+    <h1>Wine Price Prediction Result</h1>
+    <p>The predicted price of the wine is: <strong>${{ price }}</strong></p>
+    <p>The actual price you paid was: <strong>${{ actual_price }}</strong></p>
+    {% set price_difference = price - actual_price %}
+    {% if price_difference > 0 %}
+    <p>You underpaid by ${{ price_difference }}. Great deal!</p>
+    {% elif price_difference < 0 %}
+    <p>You overpaid by ${{ -price_difference }}. Oops!</p>
+    {% else %}
+    <p>You paid exactly the right amount. Spot on!</p>
+    {% endif %}
+    <a href="/">Try another description</a>
+</body>
+</html>
+
