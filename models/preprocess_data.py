@@ -1,15 +1,24 @@
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
-# from sklearn.externals import joblib
-import joblib
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import string
+import re
 
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess_text(description):
+
+    description = description.lower()
+    description = description.translate(str.maketrans('', '', string.punctuation))
+    words = word_tokenize(description)
+    words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words]
+    result = ' '.join(words)
+    result = re.sub(r'[0-9]', '', result)
+    return result
 
 
 def preprocess_and_divide():
@@ -21,9 +30,9 @@ def preprocess_and_divide():
 
     data = pd.concat([data1, data2], ignore_index=True)
 
-    # second standard deviation
-    std2_bottom = data['price'].quantile(0.003)
-    std2_top = data['price'].quantile(0.997)
+    # third standard deviation
+    std3_bottom = data['price'].quantile(0.003)
+    std3_top = data['price'].quantile(0.997)
 
     # boxplot
     # plt.figure(figsize=(8, 6))
@@ -32,11 +41,11 @@ def preprocess_and_divide():
     # plt.title('Box Plot of Wine Prices')
     # plt.show()
 
-    outliers = data[(data['price'] < std2_bottom) | (data['price'] > std2_top)]
+    outliers = data[(data['price'] < std3_bottom) | (data['price'] > std3_top)]
     print(len(outliers))
 
     # remove outliers
-    data = data[(data['price'] >= std2_bottom) & (data['price'] <= std2_top)]
+    data = data[(data['price'] >= std3_bottom) & (data['price'] <= std3_top)]
 
 
     data['province'] = data['province'].fillna('Unknown')
@@ -56,6 +65,7 @@ def preprocess_and_divide():
     data['year'] = data['title'].str.extract(r'(\b\d{4}\b)')
     years = data['year'][~data['year'].isna()]
     avg_year = round(years.astype(float).mean())
+    print('Average year across testing+validation test set: ', avg_year)
     data['year'] = data['year'].fillna(f'{avg_year}')
     
     # first std

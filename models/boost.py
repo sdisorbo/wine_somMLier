@@ -1,59 +1,121 @@
-import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
 import torch
-from transformers import BertTokenizer, BertModel, BertConfig
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.model_selection import train_test_split
-from preprocess import preprocess_and_divide
-from sklearn.metrics import mean_squared_error, accuracy_score
+import pandas as pd
+import numpy as np
+from transformers import BertTokenizer
+from preprocess_data import preprocess_text
+from BRModel import BertRegressionModel
+import joblib
 
-# Define a function to preprocess data
-def load_model(model_path):
-    config = BertConfig.from_pretrained('bert-base-uncased')
-    config.num_labels = 1
-    model = BertModel.from_pretrained('bert-base-uncased', config=config)
-    model.load_state_dict(torch.load(model_path))
-    return model
 
-def tokenize(data):
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    encodings = tokenizer(data['description'].tolist(), truncation=True, padding=True, return_tensors='pt')
-    labels = data['price'].values 
-    return TensorDataset(encodings['input_ids'], encodings['attention_mask'], torch.tensor(labels, dtype=torch.float))
+print('loading BERTs...')
 
-# Define a function to evaluate the model
-def evaluate_model(model, test_loader):
-    model.eval()
-    predictions = []
-    real_prices = []
+bert_under_model = torch.load('bert_regression_model_under_2.pth')
+bert_over_model = torch.load('bert_regression_model_over_2.pth')
+
+print('done loading BERTs!')
+
+model_under = BertRegressionModel()
+model_over = BertRegressionModel()
+
+model_under.load_state_dict(bert_under_model)
+model_over.load_state_dict(bert_over_model)
+
+# model_under.eval()
+# model_over.eval()
+
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+def get_bert_predictions(text):
+    print('entered get bert_predictions')
+
+    text = preprocess_text(text)  
+
+    tokenized_text = tokenizer(text, truncation=True, padding=True, return_tensors='pt')
+
+    input_data = {
+        'input_ids': tokenized_text['input_ids'],
+        'attention_mask': tokenized_text['attention_mask']
+    }
+
+    input_ids = torch.tensor(input_data['input_ids'])
+    attention_mask = torch.tensor(input_data['attention_mask'])
+
+    print('running models...')
+
     with torch.no_grad():
-        for batch in test_loader:
-            input_ids, attention_mask, targets = batch
-            input_ids, attention_mask, targets = input_ids.to(device), attention_mask.to(device), targets.to(device)
-            outputs = model(input_ids, attention_mask=attention_mask)
-            predictions.extend(outputs.last_hidden_state.mean(dim=1).mean(dim=1).squeeze().cpu().numpy())
-            real_prices.extend(targets.cpu().numpy())
-    return predictions, real_prices
+        price_under = model_under(input_ids, attention_mask=attention_mask)[0].item()
+        price_over = model_over(input_ids, attention_mask=attention_mask)[0].item()
+    
+    
+    return price_under, price_over
 
 
-model_path = "bert_regression_model_under.pth"
-model = load_model(model_path)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
-
-_, _, test_data = preprocess_and_divide()
-test_data = test_data[test_data['price'] < 36.0]
-test_data.sample(n=5000, random_state=42)
-test_loader = DataLoader(tokenize(test_data), batch_size=16, shuffle=False)
-
-predictions, real_prices = evaluate_model(model, test_loader)
-
-print("Real Price\tPredicted Price")
-for real_price, predicted_price in zip(real_prices, predictions):
-    print(f"{real_price}\t\t{predicted_price}")
+rf_regressor_under_split = joblib.load('rf_regressor_under_split.pkl')
+rf_regressor_over_split = joblib.load('rf_regressor_over_split.pkl')
 
 
-accuracy = accuracy_score(real_prices, predictions)
-print("Accuracy:", accuracy)
+# 2011 = average year 
+def average_predictions(description, 
+                      year=2011, 
+                      province='Unknown', 
+                      region_1='Unknown', 
+                      region_2='Unknown'):
+    
+    # get predictions from BERT
+    price_bert_under, price_bert_over = get_bert_predictions(description)
+    print(price_bert_under, price_bert_over)
+    
+    # extract features for random forest
+    rf_wine_data = pd.DataFrame({
+        'year': [year],
+        'province': [province],
+        'region_1': [region_1],
+        'region_2': [region_2]
+    })
 
-mse = mean_squared_error(real_prices, predictions)
-print(f"Mean Squared Error: {mse}")
+    label_encoder = LabelEncoder()
+    rf_wine_data['province'] = label_encoder.fit_transform(rf_wine_data['province'])
+    rf_wine_data['region_1'] = label_encoder.fit_transform(rf_wine_data['region_1'])
+    rf_wine_data['region_2'] = label_encoder.fit_transform(rf_wine_data['region_2'])
+
+    
+    price_rf_under = rf_regressor_under_split.predict(rf_wine_data.values.reshape(1, -1))
+    price_rf_over = rf_regressor_over_split.predict(rf_wine_data.values.reshape(1, -1))
+
+    # weigh the two models based on MAE 
+
+    bert_rmse = 5.319
+    rf_rmse = 5.024
+
+    inv_bert = 1 / bert_rmse
+    inv_rf = 1 / rf_rmse
+
+    scale = inv_bert + inv_rf
+
+    norm_bert = inv_bert / scale
+    norm_rf = inv_rf / scale
+
+
+    final_price_under = price_bert_under * norm_bert + price_rf_under * norm_rf
+    final_price_over = price_bert_over * norm_bert + price_rf_over * norm_rf
+    
+    return final_price_under[0], final_price_over[0]
+
+# example 
+description = "a cool vintage syrah, very dry and tough while having a flavorful tannin astringent \
+    smells of ripe blackberry with dark chocolate"
+year = 2007
+province = "California"
+region_1 = "Oak Knoll District"
+region_2 = "Napa"
+
+print('Predicting...')
+
+final_prediction_under, final_prediction_over = average_predictions(description)
+
+print("Final Prediction Under:", final_prediction_under)
+print("Final Prediction Over:", final_prediction_over)
+
