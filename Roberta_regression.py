@@ -10,10 +10,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # Load and preprocess data
 print('reading csv...')
-train_data = pd.read_csv("C:/Users/Owner/OneDrive/Documents/Eecs 448/Project/cleaned_wine_training_data.csv")
+train_data = pd.read_csv("cleaned_wine_training_data.csv")
 train_data = train_data.dropna(subset=['price'])
 print(f"Training Data shape: {train_data.shape}")
-test_data = pd.read_csv("C:/Users/Owner/OneDrive/Documents/Eecs 448/Project/cleaned_wine_training_data.csv")
+test_data = pd.read_csv("cleaned_wine_testing_data.csv")
 test_data = test_data.dropna(subset=['price'])
 print(f"Testing Data shape: {test_data.shape}")
 
@@ -51,7 +51,7 @@ def create_dataloaders(inputs, masks, labels):
     mask_tensor = torch.tensor(masks)
     label_tensor = torch.tensor(labels)
     dataset = TensorDataset(input_tensor, mask_tensor, label_tensor)
-    dataloader = DataLoader(dataset, batch_size=16, shuffle=True) # or batch=16
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True) # or batch=16
     return dataloader
 
 train_loader = create_dataloaders(train_inputs, train_masks, train_labels)
@@ -105,7 +105,7 @@ model = train(model, optimizer, loss_fn, epochs, train_loader, device)
 def evaluate(model, loss_fn, test_loader, device):
     model.eval()
     test_loss, test_r2 = [], []
-    for batch in test_loader:
+    for batch in tqdm(test_loader, total=len(test_loader)):
         batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
         with torch.no_grad():
             outputs = model(batch_inputs, batch_masks)
@@ -123,21 +123,23 @@ def r2_score(outputs, labels):
     return r2
 
 test_loss, test_r2 = evaluate(model, loss_fn, test_loader, device)
-print(f"Test Loss: {test_loss[0]:.4f}")
-print(f"Test R^2: {test_r2[0]:.6f}")
+# print(f"Test Loss: {test_loss[0]:.4f}")
+# print(f"Test R^2: {test_r2[0]:.6f}")
+print(test_loss)
+print(test_r2)
 
 # Predict
 def predict(model, data_loader, device):
     model.eval()
     output = []
-    for batch in data_loader:
+    for batch in tqdm(data_loader, total=len(data_loader)):
         batch_inputs, batch_masks, _ = tuple(b.to(device) for b in batch)
         with torch.no_grad():
             output += model(batch_inputs, batch_masks).view(1, -1).tolist()[0]
     return output
 
 # Validation
-val_data = pd.read_csv("C:/Users/Owner/OneDrive/Documents/Eecs 448/Project/cleaned_wine_validation_data.csv")
+val_data = pd.read_csv("cleaned_wine_validation_data.csv")
 val_data = val_data.dropna(subset=['price'])
 
 val_corpus = tokenizer(text = val_data.description.tolist(),
@@ -155,6 +157,10 @@ val_loader = create_dataloaders(val_inputs, val_masks, val_labels)
 val_pred_scaled = predict(model, val_loader, device)
 val_pred = price_scaler.inverse_transform(val_pred_scaled)
 
+# Save Model
+torch.save(model.state_dict(), "roberta_regression_weights.pth")
+torch.save(model, "roberta_regression.pth")
+
 # Summary
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import median_absolute_error
@@ -166,13 +172,12 @@ mae = mean_absolute_error(val_labels, val_pred)
 mdae = median_absolute_error(val_labels, val_pred)
 mse = mean_squared_error(val_labels, val_pred)
 mape = mean_absolute_percentage_error(val_labels, val_pred)
-mdape = ((pd.Series(val_labels) - pd.Series(val_pred))\
-         / pd.Series(val_labels)).abs().median()
+# mdape = ((pd.Series(val_labels) - pd.Series(val_pred)) / pd.Series(val_labels)).abs().median()
 r_squared = r2_score(val_labels, val_pred)
 
 print(f"Mean Absolute Error: {mae:.4f}")
 print(f"Median Absolute Error: {mdae:.4f}")
 print(f"Mean Squared Error: {mse:.4f}")
 print(f"Mean Absolute Percentage Error: {mape:.4f}")
-print(f"Median Absolute Percentage Error: {mdape:.4f}")
+# print(f"Median Absolute Percentage Error: {mdape:.4f}")
 print(f"R^2 Score: {r_squared:.6f}")
