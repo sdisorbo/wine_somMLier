@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 import numpy as np
 from transformers import BertTokenizer
-from preprocess_data import preprocess_text
+from models.rf_and_bert.preprocess_data import preprocess_text
 from BRModel import BertRegressionModel
 import joblib
 
@@ -21,9 +21,6 @@ model_over = BertRegressionModel()
 
 model_under.load_state_dict(bert_under_model)
 model_over.load_state_dict(bert_over_model)
-
-# model_under.eval()
-# model_over.eval()
 
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')

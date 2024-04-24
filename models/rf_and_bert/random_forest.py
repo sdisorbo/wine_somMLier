@@ -10,7 +10,7 @@ from matplotlib.colors import Normalize
 # from sklearn.externals import joblib
 import joblib
 
-from preprocess_data import preprocess_and_divide
+from models.rf_and_bert.preprocess_data import preprocess_and_divide
 
 
 split, data_under_split, data_over_split = preprocess_and_divide()
@@ -123,9 +123,6 @@ print(f"Accuracy within threshold {threshold * 100 // 2}% (price > ${split}): {a
 
 print(f'Median Absolute Error: {medae}')
 print(f'Mean Absolute Error: {meanae}')
-
-# starts getting bad at 3 std above mean = 146
-# 2593/93964 > 100
 
 price_range_edges = np.linspace(split, np.max(data_over_split['price']), num=11).round().astype(int)
 

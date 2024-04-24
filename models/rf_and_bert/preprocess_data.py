@@ -34,12 +34,6 @@ def preprocess_and_divide():
     std3_bottom = data['price'].quantile(0.003)
     std3_top = data['price'].quantile(0.997)
 
-    # boxplot
-    # plt.figure(figsize=(8, 6))
-    # plt.boxplot(data['price'], vert=False)
-    # plt.xlabel('Price')
-    # plt.title('Box Plot of Wine Prices')
-    # plt.show()
 
     outliers = data[(data['price'] < std3_bottom) | (data['price'] > std3_top)]
     print(len(outliers))

@@ -3,13 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-from transformers import BertTokenizer, BertModel, AdamW
+from transformers import BertTokenizer, AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from preprocess_data import preprocess_and_divide 
+from models.rf_and_bert.preprocess_data import preprocess_and_divide 
 from BRModel import BertRegressionModel
-import numpy as np
 
 
 def train_model(model, train_loader, val_loader, extension, optimizer, num_epochs=5):

@@ -125,7 +125,7 @@ print("Accuracy within 20%:", acc)
 
 
 # LOGISTIC REGRESSION WITH REGION AND VINTAGE
-# Much better accuracy but loses some precision
+# much better accuracy but loses some precision
 print("\n----------Logistic Regression with Region and Vintage----------")
 
 bins = [0, 5, 20, 50, 100, 300, float('inf')]
